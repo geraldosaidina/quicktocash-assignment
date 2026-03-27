@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QuickToCash.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f555987dc2adaa4d2cbe037c177acf6f170d57aa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bd74fbfba3b88ac1a661e253bd7613386b795e26")]
 [assembly: System.Reflection.AssemblyProductAttribute("QuickToCash.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QuickToCash.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

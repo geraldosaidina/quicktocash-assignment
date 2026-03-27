@@ -1,0 +1,31 @@
+.dashboard-page {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.loader {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+table {
+  width: 100%;
+}
+
+.request-form {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}

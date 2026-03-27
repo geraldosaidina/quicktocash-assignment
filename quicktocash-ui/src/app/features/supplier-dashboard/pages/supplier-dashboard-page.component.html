@@ -1,0 +1,89 @@
+<section class="dashboard-page">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Supplier Dashboard</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="loadInvoices()">
+        <mat-form-field appearance="outline">
+          <mat-label>Supplier ID</mat-label>
+          <input matInput formControlName="supplierId" placeholder="SUP-100" />
+        </mat-form-field>
+        <button mat-flat-button color="primary" type="submit">Load Invoices</button>
+      </form>
+
+      @if (loading) {
+        <div class="loader">
+          <mat-spinner diameter="36"></mat-spinner>
+        </div>
+      } @else {
+        <table mat-table [dataSource]="invoices" class="mat-elevation-z1">
+          <ng-container matColumnDef="invoiceNumber">
+            <th mat-header-cell *matHeaderCellDef>Invoice</th>
+            <td mat-cell *matCellDef="let row">{{ row.invoiceNumber }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="supplierName">
+            <th mat-header-cell *matHeaderCellDef>Supplier</th>
+            <td mat-cell *matCellDef="let row">{{ row.supplierName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let row">{{ row.status }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef>Amount</th>
+            <td mat-cell *matCellDef="let row">{{ row.amount | currency }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="dueDate">
+            <th mat-header-cell *matHeaderCellDef>Due Date</th>
+            <td mat-cell *matCellDef="let row">{{ row.dueDate | date : 'mediumDate' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let row">
+              <button mat-button type="button" (click)="viewInvoice(row.invoiceId)">View</button>
+              <button mat-button type="button" (click)="checkEligibility(row.invoiceId)">Eligibility</button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (selectedInvoice) {
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Early Payment Request</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p><strong>Invoice:</strong> {{ selectedInvoice.invoiceNumber }}</p>
+        <p><strong>Status:</strong> {{ selectedInvoice.status }}</p>
+
+        @if (eligibility) {
+          <p><strong>Eligible:</strong> {{ eligibility.isEligible ? 'Yes' : 'No' }}</p>
+          <p><strong>Reason:</strong> {{ eligibility.reason || 'Eligible for request.' }}</p>
+          <p><strong>Fee:</strong> {{ eligibility.fee | currency }}</p>
+          <p><strong>Max Disbursement:</strong> {{ eligibility.disbursementAmount | currency }}</p>
+        }
+
+        <form class="request-form" [formGroup]="requestForm" (ngSubmit)="submitEarlyPaymentRequest()">
+          <mat-form-field appearance="outline">
+            <mat-label>Disbursement Amount</mat-label>
+            <input matInput type="number" formControlName="disbursementAmount" />
+          </mat-form-field>
+          <button mat-flat-button color="accent" type="submit" [disabled]="requestForm.invalid || submitting">
+            Submit Request
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>
