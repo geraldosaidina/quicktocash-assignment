@@ -10,15 +10,18 @@ public class InvoiceService : IInvoiceService
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IEarlyPaymentRequestRepository _earlyPaymentRequestRepository;
     private readonly IEarlyPaymentService _earlyPaymentService;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public InvoiceService(
         IInvoiceRepository invoiceRepository,
         IEarlyPaymentRequestRepository earlyPaymentRequestRepository,
-        IEarlyPaymentService earlyPaymentService)
+        IEarlyPaymentService earlyPaymentService,
+        IDateTimeProvider dateTimeProvider)
     {
         _invoiceRepository = invoiceRepository;
         _earlyPaymentRequestRepository = earlyPaymentRequestRepository;
         _earlyPaymentService = earlyPaymentService;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public IReadOnlyCollection<InvoiceDto> GetInvoicesBySupplier(string supplierId)
@@ -63,46 +66,69 @@ public class InvoiceService : IInvoiceService
         };
     }
 
-    public (bool Success, string Message, IEnumerable<string> Errors, EarlyPaymentRequestDto? Request) CreateEarlyPaymentRequest(
+    public CreateEarlyPaymentRequestResultDto CreateEarlyPaymentRequest(
         string invoiceId,
         CreateEarlyPaymentRequestDto payload)
     {
-        var eligibility = GetEarlyPaymentEligibility(invoiceId);
-        if (eligibility is null)
-        {
-            return (false, "Invoice not found.", new[] { "Invalid invoice id." }, null);
-        }
-
-        if (!eligibility.IsEligible)
-        {
-            return (false, "Invoice is not eligible for early payment.", new[] { eligibility.Reason }, null);
-        }
-
-        if (payload.DisbursementAmount > eligibility.DisbursementAmount)
-        {
-            return (false, "Disbursement amount exceeds eligible amount.", new[] { "Disbursement amount is too high." }, null);
-        }
-
         var invoice = _invoiceRepository.GetById(invoiceId);
         if (invoice is null)
         {
-            return (false, "Invoice not found.", new[] { "Invalid invoice id." }, null);
+            return new CreateEarlyPaymentRequestResultDto
+            {
+                Outcome = CreateEarlyPaymentRequestOutcome.InvoiceNotFound,
+                Message = "Invoice not found.",
+                Errors = new[] { "Invalid invoice id." }
+            };
         }
 
-        var calculated = _earlyPaymentService.Evaluate(invoice);
-        var fee = calculated.Fee;
+        if (_earlyPaymentRequestRepository.HasPendingRequestForInvoiceId(invoiceId))
+        {
+            return new CreateEarlyPaymentRequestResultDto
+            {
+                Outcome = CreateEarlyPaymentRequestOutcome.DuplicateRequest,
+                Message = "A pending early payment request already exists for this invoice.",
+                Errors = new[] { "Duplicate request." }
+            };
+        }
+
+        var calculation = _earlyPaymentService.Evaluate(invoice);
+        if (!calculation.IsEligible)
+        {
+            return new CreateEarlyPaymentRequestResultDto
+            {
+                Outcome = CreateEarlyPaymentRequestOutcome.NotEligible,
+                Message = "Invoice is not eligible for early payment.",
+                Errors = new[] { calculation.Reason }
+            };
+        }
+
+        if (payload.DisbursementAmount > calculation.DisbursementAmount)
+        {
+            return new CreateEarlyPaymentRequestResultDto
+            {
+                Outcome = CreateEarlyPaymentRequestOutcome.NotEligible,
+                Message = "Invoice is not eligible for early payment.",
+                Errors = new[] { "Disbursement amount exceeds eligible amount." }
+            };
+        }
 
         var request = _earlyPaymentRequestRepository.Add(new EarlyPaymentRequest
         {
             RequestId = Guid.NewGuid().ToString("N"),
             InvoiceId = invoiceId,
-            RequestedDate = DateTime.UtcNow,
+            RequestedDate = _dateTimeProvider.UtcNow,
             DisbursementAmount = payload.DisbursementAmount,
-            Fee = fee,
+            Fee = calculation.Fee,
             Status = EarlyPaymentRequestStatus.Pending
         });
 
-        return (true, "Early payment request created.", Array.Empty<string>(), MapEarlyPaymentRequest(request));
+        return new CreateEarlyPaymentRequestResultDto
+        {
+            Outcome = CreateEarlyPaymentRequestOutcome.Created,
+            Message = "Early payment request created.",
+            Request = MapEarlyPaymentRequest(request),
+            Errors = Array.Empty<string>()
+        };
     }
 
     private static InvoiceDto MapInvoice(Invoice invoice)

@@ -6,4 +6,5 @@ public interface IEarlyPaymentRequestRepository
 {
     EarlyPaymentRequest Add(EarlyPaymentRequest request);
     IReadOnlyCollection<EarlyPaymentRequest> GetByInvoiceId(string invoiceId);
+    bool HasPendingRequestForInvoiceId(string invoiceId);
 }

@@ -25,4 +25,11 @@ public class EarlyPaymentRequestRepository : IEarlyPaymentRequestRepository
             .Where(r => r.InvoiceId.Equals(invoiceId, StringComparison.OrdinalIgnoreCase))
             .ToArray();
     }
+
+    public bool HasPendingRequestForInvoiceId(string invoiceId)
+    {
+        return _requests.Any(r =>
+            r.InvoiceId.Equals(invoiceId, StringComparison.OrdinalIgnoreCase) &&
+            r.Status == EarlyPaymentRequestStatus.Pending);
+    }
 }

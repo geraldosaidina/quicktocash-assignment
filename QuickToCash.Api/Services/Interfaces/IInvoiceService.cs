@@ -7,7 +7,5 @@ public interface IInvoiceService
     IReadOnlyCollection<InvoiceDto> GetInvoicesBySupplier(string supplierId);
     InvoiceDto? GetInvoiceById(string invoiceId);
     EarlyPaymentEligibilityDto? GetEarlyPaymentEligibility(string invoiceId);
-    (bool Success, string Message, IEnumerable<string> Errors, EarlyPaymentRequestDto? Request) CreateEarlyPaymentRequest(
-        string invoiceId,
-        CreateEarlyPaymentRequestDto payload);
+    CreateEarlyPaymentRequestResultDto CreateEarlyPaymentRequest(string invoiceId, CreateEarlyPaymentRequestDto payload);
 }

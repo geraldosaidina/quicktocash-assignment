@@ -75,12 +75,34 @@ public class InvoicesController : ControllerBase
         string id,
         [FromBody] CreateEarlyPaymentRequestDto payload)
     {
-        var result = _invoiceService.CreateEarlyPaymentRequest(id, payload);
-        if (!result.Success || result.Request is null)
+        if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse<EarlyPaymentRequestDto>.Fail(result.Message, result.Errors));
+            return BadRequest(ApiResponse<EarlyPaymentRequestDto>.Fail(
+                "Invoice id is required.",
+                new[] { "Route parameter id is missing." }));
         }
 
-        return Ok(ApiResponse<EarlyPaymentRequestDto>.Ok(result.Request, result.Message));
+        var invoiceId = id.Trim();
+        var result = _invoiceService.CreateEarlyPaymentRequest(invoiceId, payload);
+
+        if (result.Outcome == CreateEarlyPaymentRequestOutcome.InvoiceNotFound)
+        {
+            return NotFound(ApiResponse<EarlyPaymentRequestDto>.Fail(result.Message, result.Errors));
+        }
+
+        if (result.Outcome is CreateEarlyPaymentRequestOutcome.DuplicateRequest or CreateEarlyPaymentRequestOutcome.NotEligible)
+        {
+            return Conflict(ApiResponse<EarlyPaymentRequestDto>.Fail(result.Message, result.Errors));
+        }
+
+        if (result.Request is null)
+        {
+            return Conflict(ApiResponse<EarlyPaymentRequestDto>.Fail(
+                "Unable to create early payment request.",
+                new[] { "Unknown request creation issue." }));
+        }
+
+        var response = ApiResponse<EarlyPaymentRequestDto>.Ok(result.Request, result.Message);
+        return Created($"/api/invoices/{invoiceId}/early-payment-request", response);
     }
 }
