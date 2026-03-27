@@ -26,6 +26,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 builder.Services.AddSingleton<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddSingleton<IEarlyPaymentRequestRepository, EarlyPaymentRequestRepository>();
+builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+builder.Services.AddScoped<IEarlyPaymentService, EarlyPaymentService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 
 var app = builder.Build();

@@ -106,3 +106,6 @@ D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\obj\Debug\net10.0\refint\Qu
 D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\obj\Debug\net10.0\QuickToCash.Api.Tests.pdb
 D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\obj\Debug\net10.0\QuickToCash.Api.Tests.genruntimeconfig.cache
 D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\obj\Debug\net10.0\ref\QuickToCash.Api.Tests.dll
+D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\bin\Debug\net10.0\Castle.Core.dll
+D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\bin\Debug\net10.0\Moq.dll
+D:\Work\quicktocash-assignment\QuickToCash.Api.Tests\obj\Debug\net10.0\QuickToCash.Api.Tests.sourcelink.json

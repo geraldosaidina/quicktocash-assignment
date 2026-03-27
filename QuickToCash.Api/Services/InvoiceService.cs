@@ -9,13 +9,16 @@ public class InvoiceService : IInvoiceService
 {
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IEarlyPaymentRequestRepository _earlyPaymentRequestRepository;
+    private readonly IEarlyPaymentService _earlyPaymentService;
 
     public InvoiceService(
         IInvoiceRepository invoiceRepository,
-        IEarlyPaymentRequestRepository earlyPaymentRequestRepository)
+        IEarlyPaymentRequestRepository earlyPaymentRequestRepository,
+        IEarlyPaymentService earlyPaymentService)
     {
         _invoiceRepository = invoiceRepository;
         _earlyPaymentRequestRepository = earlyPaymentRequestRepository;
+        _earlyPaymentService = earlyPaymentService;
     }
 
     public IReadOnlyCollection<InvoiceDto> GetInvoicesBySupplier(string supplierId)
@@ -40,24 +43,22 @@ public class InvoiceService : IInvoiceService
             return null;
         }
 
+        var calculation = _earlyPaymentService.Evaluate(invoice);
         var hasPendingRequest = _earlyPaymentRequestRepository
             .GetByInvoiceId(invoiceId)
             .Any(r => r.Status == EarlyPaymentRequestStatus.Pending);
-
-        var isEligible =
-            invoice.Status == InvoiceStatus.Approved &&
-            invoice.DueDate > DateTime.UtcNow &&
-            !hasPendingRequest;
-
-        var reason = isEligible
-            ? "Invoice is eligible for early payment."
-            : "Invoice must be approved, not overdue, and without a pending request.";
+        var isEligible = calculation.IsEligible && !hasPendingRequest;
+        var reason = hasPendingRequest
+            ? "Invoice already has a pending early payment request."
+            : calculation.Reason;
 
         return new EarlyPaymentEligibilityDto
         {
             InvoiceId = invoiceId,
             IsEligible = isEligible,
-            MaxDisbursementAmount = invoice.Amount,
+            Fee = isEligible ? calculation.Fee : 0m,
+            DisbursementAmount = isEligible ? calculation.DisbursementAmount : 0m,
+            EarlyByDays = calculation.EarlyByDays,
             Reason = reason
         };
     }
@@ -77,12 +78,19 @@ public class InvoiceService : IInvoiceService
             return (false, "Invoice is not eligible for early payment.", new[] { eligibility.Reason }, null);
         }
 
-        if (payload.DisbursementAmount > eligibility.MaxDisbursementAmount)
+        if (payload.DisbursementAmount > eligibility.DisbursementAmount)
         {
-            return (false, "Disbursement amount exceeds invoice amount.", new[] { "Disbursement amount is too high." }, null);
+            return (false, "Disbursement amount exceeds eligible amount.", new[] { "Disbursement amount is too high." }, null);
         }
 
-        var fee = decimal.Round(payload.DisbursementAmount * 0.02m, 2, MidpointRounding.AwayFromZero);
+        var invoice = _invoiceRepository.GetById(invoiceId);
+        if (invoice is null)
+        {
+            return (false, "Invoice not found.", new[] { "Invalid invoice id." }, null);
+        }
+
+        var calculated = _earlyPaymentService.Evaluate(invoice);
+        var fee = calculated.Fee;
 
         var request = _earlyPaymentRequestRepository.Add(new EarlyPaymentRequest
         {

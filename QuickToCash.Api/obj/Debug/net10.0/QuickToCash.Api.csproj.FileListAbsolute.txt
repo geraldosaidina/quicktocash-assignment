@@ -31,3 +31,4 @@ D:\Work\quicktocash-assignment\QuickToCash.Api\obj\Debug\net10.0\refint\QuickToC
 D:\Work\quicktocash-assignment\QuickToCash.Api\obj\Debug\net10.0\QuickToCash.Api.pdb
 D:\Work\quicktocash-assignment\QuickToCash.Api\obj\Debug\net10.0\QuickToCash.Api.genruntimeconfig.cache
 D:\Work\quicktocash-assignment\QuickToCash.Api\obj\Debug\net10.0\ref\QuickToCash.Api.dll
+D:\Work\quicktocash-assignment\QuickToCash.Api\obj\Debug\net10.0\QuickToCash.Api.sourcelink.json

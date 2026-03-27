@@ -1,8 +1,7 @@
 namespace QuickToCash.Api.DTOs;
 
-public class EarlyPaymentEligibilityDto
+public class EarlyPaymentCalculationResultDto
 {
-    public string InvoiceId { get; init; } = string.Empty;
     public bool IsEligible { get; init; }
     public decimal Fee { get; init; }
     public decimal DisbursementAmount { get; init; }
