@@ -1,0 +1,8 @@
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.csproj.AssemblyReference.cache
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\rpswa.dswa.cache.json
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.GeneratedMSBuildEditorConfig.editorconfig
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.AssemblyInfoInputs.cache
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.AssemblyInfo.cs
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.csproj.CoreCompileInputs.cache
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.MvcApplicationPartsAssemblyInfo.cs
+D:\Work\quicktocash-assignment\.artifacts\obj\Debug\net10.0\QuickToCash.Api.MvcApplicationPartsAssemblyInfo.cache

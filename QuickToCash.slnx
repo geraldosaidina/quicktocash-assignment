@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="QuickToCash.Api.Tests/QuickToCash.Api.Tests.csproj" />
+  <Project Path="QuickToCash.Api/QuickToCash.Api.csproj" />
+</Solution>
