@@ -26,14 +26,21 @@ public class InvoicesController : ControllerBase
                 new[] { "Query parameter supplierId is missing." }));
         }
 
-        var invoices = _invoiceService.GetInvoicesBySupplier(supplierId);
+        var invoices = _invoiceService.GetInvoicesBySupplier(supplierId.Trim());
         return Ok(ApiResponse<IReadOnlyCollection<InvoiceDto>>.Ok(invoices));
     }
 
     [HttpGet("{id}")]
     public ActionResult<ApiResponse<InvoiceDto>> GetInvoiceById(string id)
     {
-        var invoice = _invoiceService.GetInvoiceById(id);
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(ApiResponse<InvoiceDto>.Fail(
+                "Invoice id is required.",
+                new[] { "Route parameter id is missing." }));
+        }
+
+        var invoice = _invoiceService.GetInvoiceById(id.Trim());
         if (invoice is null)
         {
             return NotFound(ApiResponse<InvoiceDto>.Fail("Invoice not found.", new[] { "Invalid invoice id." }));
@@ -45,7 +52,14 @@ public class InvoicesController : ControllerBase
     [HttpGet("{id}/early-payment-eligibility")]
     public ActionResult<ApiResponse<EarlyPaymentEligibilityDto>> GetEarlyPaymentEligibility(string id)
     {
-        var eligibility = _invoiceService.GetEarlyPaymentEligibility(id);
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(ApiResponse<EarlyPaymentEligibilityDto>.Fail(
+                "Invoice id is required.",
+                new[] { "Route parameter id is missing." }));
+        }
+
+        var eligibility = _invoiceService.GetEarlyPaymentEligibility(id.Trim());
         if (eligibility is null)
         {
             return NotFound(ApiResponse<EarlyPaymentEligibilityDto>.Fail(

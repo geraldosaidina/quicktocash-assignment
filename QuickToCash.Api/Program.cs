@@ -6,10 +6,22 @@ using QuickToCash.Api.Repositories.Interfaces;
 using QuickToCash.Api.Services;
 using QuickToCash.Api.Services.Interfaces;
 
+const string LocalFrontendCorsPolicy = "LocalFrontendCorsPolicy";
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(LocalFrontendCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200", "https://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -38,6 +50,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors(LocalFrontendCorsPolicy);
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
