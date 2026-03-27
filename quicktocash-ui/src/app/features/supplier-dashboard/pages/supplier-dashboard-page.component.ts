@@ -5,6 +5,8 @@ import { finalize } from 'rxjs';
 import { InvoiceService } from '../../../core/services/invoice.service';
 import { EarlyPaymentEligibility, Invoice } from '../../../shared/models';
 
+type InvoiceStatusFilter = 'All' | 'Pending' | 'Approved' | 'Funded' | 'Rejected';
+
 @Component({
   selector: 'app-supplier-dashboard-page',
   standalone: false,
@@ -12,16 +14,52 @@ import { EarlyPaymentEligibility, Invoice } from '../../../shared/models';
   styleUrl: './supplier-dashboard-page.component.scss'
 })
 export class SupplierDashboardPageComponent implements OnInit {
-  readonly displayedColumns = ['invoiceNumber', 'supplierName', 'status', 'amount', 'dueDate', 'actions'];
+  readonly displayedColumns = [
+    'invoiceNumber',
+    'supplierName',
+    'amount',
+    'submittedDate',
+    'dueDate',
+    'status',
+    'actions'
+  ];
+  readonly statusFilters: InvoiceStatusFilter[] = ['All', 'Pending', 'Approved', 'Funded', 'Rejected'];
+  readonly statusClassMap: Record<string, string> = {
+    Pending: 'badge-pending',
+    Approved: 'badge-approved',
+    Funded: 'badge-funded',
+    Rejected: 'badge-rejected'
+  };
+  readonly defaultSupplierId = 'SUP-100';
 
   readonly filtersForm;
   readonly requestForm;
 
-  invoices: Invoice[] = [];
+  allInvoices: Invoice[] = [];
+  filteredInvoices: Invoice[] = [];
+  summaryCounts: Record<InvoiceStatusFilter, number> = {
+    All: 0,
+    Pending: 0,
+    Approved: 0,
+    Funded: 0,
+    Rejected: 0
+  };
+  selectedStatus: InvoiceStatusFilter = 'All';
+  searchTerm = '';
+
   selectedInvoice: Invoice | null = null;
   eligibility: EarlyPaymentEligibility | null = null;
+  detailPanelOpen = false;
+  eligibilityLoading = false;
+  detailErrorMessage = '';
+  selectedInvoiceAlreadyRequested = false;
+  confirmingRequest = false;
+
+  private readonly requestedInvoiceIds = new Set<string>();
+
   loading = false;
   submitting = false;
+  errorMessage = '';
 
   constructor(
     private readonly fb: FormBuilder,
@@ -29,7 +67,7 @@ export class SupplierDashboardPageComponent implements OnInit {
     private readonly snackBar: MatSnackBar
   ) {
     this.filtersForm = this.fb.group({
-      supplierId: ['SUP-100', Validators.required]
+      supplierId: [this.defaultSupplierId, Validators.required]
     });
 
     this.requestForm = this.fb.group({
@@ -38,7 +76,8 @@ export class SupplierDashboardPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadInvoices();
+    // Delay initial request to next macrotask to avoid first-pass hydration expression checks.
+    setTimeout(() => this.loadInvoices());
   }
 
   loadInvoices(): void {
@@ -51,21 +90,48 @@ export class SupplierDashboardPageComponent implements OnInit {
       return;
     }
 
+    this.errorMessage = '';
     this.loading = true;
     this.invoiceService
       .getInvoicesBySupplier(supplierId)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (invoices) => {
-          this.invoices = invoices;
-          this.selectedInvoice = null;
-          this.eligibility = null;
+          this.allInvoices = invoices;
+          this.selectedStatus = 'All';
+          this.searchTerm = '';
+          this.recomputeDerivedState();
+          this.closeDetailPanel();
         },
-        error: (error) => this.showError(error)
+        error: (error) => {
+          this.allInvoices = [];
+          this.filteredInvoices = [];
+          this.recomputeDerivedState();
+          this.closeDetailPanel();
+          this.showError(error);
+        }
       });
   }
 
-  viewInvoice(invoiceId: string): void {
+  selectStatus(status: string): void {
+    this.selectedStatus = this.statusFilters.includes(status as InvoiceStatusFilter)
+      ? (status as InvoiceStatusFilter)
+      : 'All';
+    this.recomputeDerivedState();
+  }
+
+  updateSearchTerm(value: string): void {
+    this.searchTerm = value;
+    this.recomputeDerivedState();
+  }
+
+  openInvoiceDetails(invoiceId: string): void {
+    if (!invoiceId) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.detailErrorMessage = '';
     this.loading = true;
     this.invoiceService
       .getInvoiceById(invoiceId)
@@ -73,17 +139,24 @@ export class SupplierDashboardPageComponent implements OnInit {
       .subscribe({
         next: (invoice) => {
           this.selectedInvoice = invoice;
-          this.eligibility = null;
+          this.detailPanelOpen = true;
+          this.selectedInvoiceAlreadyRequested = this.requestedInvoiceIds.has(invoice.invoiceId);
+          this.confirmingRequest = false;
+          this.fetchEligibility(invoice.invoiceId);
         },
         error: (error) => this.showError(error)
       });
   }
 
-  checkEligibility(invoiceId: string): void {
-    this.loading = true;
+  fetchEligibility(invoiceId: string): void {
+    this.detailErrorMessage = '';
+    this.eligibility = null;
+    this.eligibilityLoading = true;
+    this.confirmingRequest = false;
+
     this.invoiceService
       .getEarlyPaymentEligibility(invoiceId)
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(finalize(() => (this.eligibilityLoading = false)))
       .subscribe({
         next: (eligibility) => {
           this.eligibility = eligibility;
@@ -91,31 +164,133 @@ export class SupplierDashboardPageComponent implements OnInit {
             disbursementAmount: eligibility.disbursementAmount
           });
         },
-        error: (error) => this.showError(error)
+        error: (error) => {
+          this.detailErrorMessage = this.getErrorMessage(error);
+          this.showError(error);
+        }
       });
   }
 
-  submitEarlyPaymentRequest(): void {
-    if (!this.selectedInvoice || this.requestForm.invalid) {
+  startRequestConfirmation(): void {
+    if (!this.selectedInvoice || !this.eligibility?.isEligible || this.selectedInvoiceAlreadyRequested) {
       return;
     }
 
+    this.confirmingRequest = true;
+  }
+
+  cancelRequestConfirmation(): void {
+    this.confirmingRequest = false;
+  }
+
+  submitEarlyPaymentRequest(): void {
+    if (
+      !this.selectedInvoice ||
+      !this.eligibility?.isEligible ||
+      this.selectedInvoiceAlreadyRequested ||
+      this.requestForm.invalid
+    ) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.detailErrorMessage = '';
     this.submitting = true;
+    const invoiceId = this.selectedInvoice.invoiceId;
+
     this.invoiceService
-      .submitEarlyPaymentRequest(this.selectedInvoice.invoiceId, {
+      .submitEarlyPaymentRequest(invoiceId, {
         disbursementAmount: this.requestForm.controls.disbursementAmount.value ?? 0
       })
       .pipe(finalize(() => (this.submitting = false)))
       .subscribe({
         next: () => {
           this.snackBar.open('Early payment request submitted.', 'Close', { duration: 3000 });
+          this.requestedInvoiceIds.add(invoiceId);
+          this.selectedInvoiceAlreadyRequested = true;
+          this.confirmingRequest = false;
+          this.fetchEligibility(invoiceId);
         },
-        error: (error) => this.showError(error)
+        error: (error) => {
+          const message = this.getErrorMessage(error);
+          this.detailErrorMessage = message;
+
+          if (
+            message.toLowerCase().includes('duplicate') ||
+            message.toLowerCase().includes('pending early payment request')
+          ) {
+            this.requestedInvoiceIds.add(invoiceId);
+            this.selectedInvoiceAlreadyRequested = true;
+          }
+
+          this.showError(error);
+        }
       });
   }
 
+  closeDetailPanel(): void {
+    this.detailPanelOpen = false;
+    this.selectedInvoice = null;
+    this.eligibility = null;
+    this.detailErrorMessage = '';
+    this.selectedInvoiceAlreadyRequested = false;
+    this.confirmingRequest = false;
+  }
+
+  private recomputeDerivedState(): void {
+    this.summaryCounts = this.buildSummaryCounts(this.allInvoices);
+    this.filteredInvoices = this.filterInvoices(this.allInvoices, this.selectedStatus, this.searchTerm);
+  }
+
+  private buildSummaryCounts(invoices: Invoice[]): Record<InvoiceStatusFilter, number> {
+    const counts: Record<InvoiceStatusFilter, number> = {
+      All: invoices.length,
+      Pending: 0,
+      Approved: 0,
+      Funded: 0,
+      Rejected: 0
+    };
+
+    for (const invoice of invoices) {
+      if (invoice.status === 'Pending') {
+        counts.Pending++;
+      } else if (invoice.status === 'Approved') {
+        counts.Approved++;
+      } else if (invoice.status === 'Funded') {
+        counts.Funded++;
+      } else if (invoice.status === 'Rejected') {
+        counts.Rejected++;
+      }
+    }
+
+    return counts;
+  }
+
+  private filterInvoices(
+    invoices: Invoice[],
+    status: InvoiceStatusFilter,
+    searchTerm: string
+  ): Invoice[] {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+    return invoices.filter((invoice) => {
+      const statusMatches = status === 'All' || invoice.status === status;
+      const searchMatches =
+        !normalizedSearchTerm ||
+        invoice.invoiceNumber.toLowerCase().includes(normalizedSearchTerm) ||
+        invoice.supplierName.toLowerCase().includes(normalizedSearchTerm);
+
+      return statusMatches && searchMatches;
+    });
+  }
+
   private showError(error: unknown): void {
-    const message = error instanceof Error ? error.message : 'Request failed.';
+    const message = this.getErrorMessage(error);
+    this.errorMessage = message;
     this.snackBar.open(message, 'Close', { duration: 4000 });
+  }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : 'Request failed.';
   }
 }

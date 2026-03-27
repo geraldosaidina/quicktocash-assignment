@@ -1,89 +1,187 @@
-<section class="dashboard-page">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>Supplier Dashboard</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="loadInvoices()">
-        <mat-form-field appearance="outline">
-          <mat-label>Supplier ID</mat-label>
-          <input matInput formControlName="supplierId" placeholder="SUP-100" />
-        </mat-form-field>
-        <button mat-flat-button color="primary" type="submit">Load Invoices</button>
-      </form>
+<mat-drawer-container class="dashboard-layout" autosize>
+  <mat-drawer
+    position="end"
+    mode="over"
+    [opened]="detailPanelOpen"
+    class="detail-panel"
+    (closedStart)="closeDetailPanel()"
+  >
+    @if (selectedInvoice) {
+      <div class="detail-header">
+        <h3>Invoice Details</h3>
+        <button mat-icon-button type="button" (click)="closeDetailPanel()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
 
-      @if (loading) {
-        <div class="loader">
-          <mat-spinner diameter="36"></mat-spinner>
-        </div>
-      } @else {
-        <table mat-table [dataSource]="invoices" class="mat-elevation-z1">
-          <ng-container matColumnDef="invoiceNumber">
-            <th mat-header-cell *matHeaderCellDef>Invoice</th>
-            <td mat-cell *matCellDef="let row">{{ row.invoiceNumber }}</td>
-          </ng-container>
+      <mat-divider></mat-divider>
 
-          <ng-container matColumnDef="supplierName">
-            <th mat-header-cell *matHeaderCellDef>Supplier</th>
-            <td mat-cell *matCellDef="let row">{{ row.supplierName }}</td>
-          </ng-container>
+      <div class="detail-body">
+        <p><strong>Invoice No:</strong> {{ selectedInvoice.invoiceNumber }}</p>
+        <p><strong>Supplier:</strong> {{ selectedInvoice.supplierName }}</p>
+        <p><strong>Amount:</strong> {{ selectedInvoice.amount | currency }}</p>
+        <p><strong>Submitted:</strong> {{ selectedInvoice.submittedDate | date : 'mediumDate' }}</p>
+        <p><strong>Due:</strong> {{ selectedInvoice.dueDate | date : 'mediumDate' }}</p>
+        <p>
+          <strong>Status:</strong>
+          <span class="status-badge" [ngClass]="statusClassMap[selectedInvoice.status]">
+            {{ selectedInvoice.status }}
+          </span>
+        </p>
+      </div>
 
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let row">{{ row.status }}</td>
-          </ng-container>
+      <mat-divider></mat-divider>
 
-          <ng-container matColumnDef="amount">
-            <th mat-header-cell *matHeaderCellDef>Amount</th>
-            <td mat-cell *matCellDef="let row">{{ row.amount | currency }}</td>
-          </ng-container>
+      <div class="detail-body">
+        <h4>Early Payment Eligibility</h4>
 
-          <ng-container matColumnDef="dueDate">
-            <th mat-header-cell *matHeaderCellDef>Due Date</th>
-            <td mat-cell *matCellDef="let row">{{ row.dueDate | date : 'mediumDate' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let row">
-              <button mat-button type="button" (click)="viewInvoice(row.invoiceId)">View</button>
-              <button mat-button type="button" (click)="checkEligibility(row.invoiceId)">Eligibility</button>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-        </table>
-      }
-    </mat-card-content>
-  </mat-card>
-
-  @if (selectedInvoice) {
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Early Payment Request</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <p><strong>Invoice:</strong> {{ selectedInvoice.invoiceNumber }}</p>
-        <p><strong>Status:</strong> {{ selectedInvoice.status }}</p>
-
-        @if (eligibility) {
+        @if (eligibilityLoading) {
+          <div class="loader">
+            <mat-spinner diameter="28"></mat-spinner>
+          </div>
+        } @else if (detailErrorMessage) {
+          <div class="state-message error">
+            <mat-icon>error</mat-icon>
+            <span>{{ detailErrorMessage }}</span>
+          </div>
+        } @else if (eligibility) {
           <p><strong>Eligible:</strong> {{ eligibility.isEligible ? 'Yes' : 'No' }}</p>
-          <p><strong>Reason:</strong> {{ eligibility.reason || 'Eligible for request.' }}</p>
+          <p><strong>Days Early:</strong> {{ eligibility.earlyByDays }}</p>
           <p><strong>Fee:</strong> {{ eligibility.fee | currency }}</p>
-          <p><strong>Max Disbursement:</strong> {{ eligibility.disbursementAmount | currency }}</p>
-        }
+          <p><strong>Disbursement:</strong> {{ eligibility.disbursementAmount | currency }}</p>
+          <p><strong>Reason:</strong> {{ eligibility.reason || 'Invoice is eligible.' }}</p>
 
-        <form class="request-form" [formGroup]="requestForm" (ngSubmit)="submitEarlyPaymentRequest()">
-          <mat-form-field appearance="outline">
-            <mat-label>Disbursement Amount</mat-label>
-            <input matInput type="number" formControlName="disbursementAmount" />
-          </mat-form-field>
-          <button mat-flat-button color="accent" type="submit" [disabled]="requestForm.invalid || submitting">
-            Submit Request
-          </button>
-        </form>
-      </mat-card-content>
-    </mat-card>
-  }
-</section>
+          @if (selectedInvoiceAlreadyRequested) {
+            <div class="state-message empty">
+              <mat-icon>check_circle</mat-icon>
+              <span>Early payment request already submitted for this invoice.</span>
+            </div>
+          } @else if (eligibility.isEligible) {
+            <form class="request-form" [formGroup]="requestForm" (ngSubmit)="submitEarlyPaymentRequest()">
+              <mat-form-field appearance="outline">
+                <mat-label>Disbursement Amount</mat-label>
+                <input matInput type="number" formControlName="disbursementAmount" />
+              </mat-form-field>
+
+              @if (!confirmingRequest) {
+                <button mat-flat-button color="primary" type="button" (click)="startRequestConfirmation()">
+                  Request Early Payment
+                </button>
+              } @else {
+                <div class="confirm-block">
+                  <p>Confirm early payment request for this invoice?</p>
+                  <div class="confirm-actions">
+                    <button mat-flat-button color="accent" type="submit" [disabled]="requestForm.invalid || submitting">
+                      {{ submitting ? 'Submitting...' : 'Confirm Submit' }}
+                    </button>
+                    <button mat-button type="button" (click)="cancelRequestConfirmation()">Cancel</button>
+                  </div>
+                </div>
+              }
+            </form>
+          }
+        }
+      </div>
+    }
+  </mat-drawer>
+
+  <mat-drawer-content>
+    <section class="dashboard-page">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Supplier Dashboard</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form class="filters" [formGroup]="filtersForm" (ngSubmit)="loadInvoices()">
+            <mat-form-field appearance="outline">
+              <mat-label>Supplier ID</mat-label>
+              <input matInput formControlName="supplierId" placeholder="SUP-100" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Search invoices</mat-label>
+              <input
+                matInput
+                [value]="searchTerm"
+                (input)="updateSearchTerm($any($event.target).value)"
+                placeholder="Invoice number or supplier name"
+              />
+            </mat-form-field>
+            <button mat-flat-button color="primary" type="submit">Load Invoices</button>
+          </form>
+
+          <mat-button-toggle-group
+            class="summary-strip"
+            [value]="selectedStatus"
+            (change)="selectStatus($event.value)"
+          >
+            @for (status of statusFilters; track status) {
+              <mat-button-toggle [value]="status">
+                {{ status }} ({{ summaryCounts[status] }})
+              </mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+
+          @if (loading) {
+            <div class="loader">
+              <mat-spinner diameter="36"></mat-spinner>
+            </div>
+          } @else if (errorMessage) {
+            <div class="state-message error">
+              <mat-icon>error</mat-icon>
+              <span>{{ errorMessage }}</span>
+            </div>
+          } @else if (!filteredInvoices.length) {
+            <div class="state-message empty">
+              <mat-icon>inbox</mat-icon>
+              <span>No invoices found for the selected filters.</span>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="filteredInvoices" class="mat-elevation-z1">
+              <ng-container matColumnDef="invoiceNumber">
+                <th mat-header-cell *matHeaderCellDef>Invoice No</th>
+                <td mat-cell *matCellDef="let row">{{ row.invoiceNumber }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="supplierName">
+                <th mat-header-cell *matHeaderCellDef>Supplier</th>
+                <td mat-cell *matCellDef="let row">{{ row.supplierName }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Amount</th>
+                <td mat-cell *matCellDef="let row">{{ row.amount | currency }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="submittedDate">
+                <th mat-header-cell *matHeaderCellDef>Submitted Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.submittedDate | date : 'mediumDate' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="dueDate">
+                <th mat-header-cell *matHeaderCellDef>Due Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.dueDate | date : 'mediumDate' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [ngClass]="statusClassMap[row.status]">{{ row.status }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let row">
+                  <button mat-button type="button" (click)="openInvoiceDetails(row.invoiceId)">Open</button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  </mat-drawer-content>
+</mat-drawer-container>

@@ -3,7 +3,7 @@ import {
   ErrorHandler,
   provideBrowserGlobalErrorListeners
 } from '@angular/core';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
@@ -19,7 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
     provideAnimations(),
-    provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, httpErrorInterceptor])),
     {
       provide: ErrorHandler,
       useClass: GlobalErrorHandler

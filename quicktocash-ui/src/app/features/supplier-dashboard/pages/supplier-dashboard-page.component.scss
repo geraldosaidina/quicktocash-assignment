@@ -1,7 +1,13 @@
+.dashboard-layout {
+  width: 100%;
+  min-height: 100vh;
+  background: #f3f6fb;
+}
+
 .dashboard-page {
   display: grid;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
 }
 
 .filters {
@@ -12,6 +18,12 @@
   margin-bottom: 1rem;
 }
 
+.summary-strip {
+  margin-bottom: 1rem;
+  width: 100%;
+  overflow: auto;
+}
+
 .loader {
   display: flex;
   justify-content: center;
@@ -20,12 +32,115 @@
 
 table {
   width: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-pending {
+  color: #9a4d00;
+  background: #ffedd5;
+}
+
+.badge-approved {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.badge-funded {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.badge-rejected {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.state-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.state-message.error {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.state-message.empty {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.detail-panel {
+  width: min(420px, 94vw);
+  padding: 0.75rem 1rem 1.25rem;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.detail-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.detail-body {
+  padding: 0.85rem 0;
+}
+
+.detail-body p {
+  margin: 0 0 0.55rem;
+  color: #1e293b;
 }
 
 .request-form {
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  gap: 0.75rem;
+  align-items: flex-start;
   flex-wrap: wrap;
+}
+
+.confirm-block {
+  width: 100%;
+  background: #eef4ff;
+  border: 1px solid #dbeafe;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.confirm-block p {
+  margin: 0 0 0.5rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-page {
+    padding: 1.25rem;
+  }
+
+  .filters {
+    gap: 0.75rem;
+  }
 }
