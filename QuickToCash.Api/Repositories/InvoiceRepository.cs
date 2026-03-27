@@ -20,8 +20,8 @@ public class InvoiceRepository : IInvoiceRepository
             .ToArray();
     }
 
-    public Invoice? GetById(Guid invoiceId)
+    public Invoice? GetById(string invoiceId)
     {
-        return _invoices.FirstOrDefault(i => i.Id == invoiceId);
+        return _invoices.FirstOrDefault(i => i.InvoiceId.Equals(invoiceId, StringComparison.OrdinalIgnoreCase));
     }
 }

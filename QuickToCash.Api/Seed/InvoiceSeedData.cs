@@ -10,30 +10,36 @@ public static class InvoiceSeedData
         {
             new()
             {
-                Id = Guid.Parse("e83695e5-4cbf-4a0f-9f2c-69d878ecf100"),
+                InvoiceId = "INV-1001",
+                InvoiceNumber = "QTC-2026-0001",
+                SupplierName = "Acme Manufacturing",
                 SupplierId = "SUP-100",
                 Amount = 10000m,
-                AmountPaid = 0m,
-                DueDateUtc = DateTime.UtcNow.Date.AddDays(14),
+                SubmittedDate = DateTime.UtcNow.Date.AddDays(-6),
+                DueDate = DateTime.UtcNow.Date.AddDays(14),
                 Status = InvoiceStatus.Approved
             },
             new()
             {
-                Id = Guid.Parse("9755ad67-0322-4574-8eb6-bf5976ffea01"),
+                InvoiceId = "INV-1002",
+                InvoiceNumber = "QTC-2026-0002",
+                SupplierName = "Acme Manufacturing",
                 SupplierId = "SUP-100",
                 Amount = 7500m,
-                AmountPaid = 2500m,
-                DueDateUtc = DateTime.UtcNow.Date.AddDays(7),
-                Status = InvoiceStatus.Approved
+                SubmittedDate = DateTime.UtcNow.Date.AddDays(-12),
+                DueDate = DateTime.UtcNow.Date.AddDays(7),
+                Status = InvoiceStatus.Pending
             },
             new()
             {
-                Id = Guid.Parse("611c6f7a-7f4b-4d4d-a96c-70c53c04df02"),
+                InvoiceId = "INV-2001",
+                InvoiceNumber = "QTC-2026-0003",
+                SupplierName = "Global Parts Ltd",
                 SupplierId = "SUP-200",
                 Amount = 12000m,
-                AmountPaid = 12000m,
-                DueDateUtc = DateTime.UtcNow.Date.AddDays(-5),
-                Status = InvoiceStatus.Paid
+                SubmittedDate = DateTime.UtcNow.Date.AddDays(-18),
+                DueDate = DateTime.UtcNow.Date.AddDays(-5),
+                Status = InvoiceStatus.Funded
             }
         };
     }

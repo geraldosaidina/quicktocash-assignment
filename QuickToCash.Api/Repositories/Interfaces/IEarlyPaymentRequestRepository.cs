@@ -5,5 +5,5 @@ namespace QuickToCash.Api.Repositories.Interfaces;
 public interface IEarlyPaymentRequestRepository
 {
     EarlyPaymentRequest Add(EarlyPaymentRequest request);
-    IReadOnlyCollection<EarlyPaymentRequest> GetByInvoiceId(Guid invoiceId);
+    IReadOnlyCollection<EarlyPaymentRequest> GetByInvoiceId(string invoiceId);
 }

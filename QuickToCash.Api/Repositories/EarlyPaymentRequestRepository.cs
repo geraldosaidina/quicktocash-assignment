@@ -13,8 +13,10 @@ public class EarlyPaymentRequestRepository : IEarlyPaymentRequestRepository
         return request;
     }
 
-    public IReadOnlyCollection<EarlyPaymentRequest> GetByInvoiceId(Guid invoiceId)
+    public IReadOnlyCollection<EarlyPaymentRequest> GetByInvoiceId(string invoiceId)
     {
-        return _requests.Where(r => r.InvoiceId == invoiceId).ToArray();
+        return _requests
+            .Where(r => r.InvoiceId.Equals(invoiceId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
     }
 }

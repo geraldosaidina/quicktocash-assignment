@@ -26,13 +26,13 @@ public class InvoiceService : IInvoiceService
             .ToArray();
     }
 
-    public InvoiceDto? GetInvoiceById(Guid invoiceId)
+    public InvoiceDto? GetInvoiceById(string invoiceId)
     {
         var invoice = _invoiceRepository.GetById(invoiceId);
         return invoice is null ? null : MapInvoice(invoice);
     }
 
-    public EarlyPaymentEligibilityDto? GetEarlyPaymentEligibility(Guid invoiceId)
+    public EarlyPaymentEligibilityDto? GetEarlyPaymentEligibility(string invoiceId)
     {
         var invoice = _invoiceRepository.GetById(invoiceId);
         if (invoice is null)
@@ -40,32 +40,30 @@ public class InvoiceService : IInvoiceService
             return null;
         }
 
-        var amountOutstanding = invoice.Amount - invoice.AmountPaid;
         var hasPendingRequest = _earlyPaymentRequestRepository
             .GetByInvoiceId(invoiceId)
             .Any(r => r.Status == EarlyPaymentRequestStatus.Pending);
 
         var isEligible =
             invoice.Status == InvoiceStatus.Approved &&
-            invoice.DueDateUtc > DateTime.UtcNow &&
-            amountOutstanding > 0 &&
+            invoice.DueDate > DateTime.UtcNow &&
             !hasPendingRequest;
 
         var reason = isEligible
             ? "Invoice is eligible for early payment."
-            : "Invoice must be approved, unpaid, not overdue, and without a pending request.";
+            : "Invoice must be approved, not overdue, and without a pending request.";
 
         return new EarlyPaymentEligibilityDto
         {
             InvoiceId = invoiceId,
             IsEligible = isEligible,
-            MaxRequestAmount = amountOutstanding > 0 ? amountOutstanding : 0,
+            MaxDisbursementAmount = invoice.Amount,
             Reason = reason
         };
     }
 
     public (bool Success, string Message, IEnumerable<string> Errors, EarlyPaymentRequestDto? Request) CreateEarlyPaymentRequest(
-        Guid invoiceId,
+        string invoiceId,
         CreateEarlyPaymentRequestDto payload)
     {
         var eligibility = GetEarlyPaymentEligibility(invoiceId);
@@ -79,17 +77,20 @@ public class InvoiceService : IInvoiceService
             return (false, "Invoice is not eligible for early payment.", new[] { eligibility.Reason }, null);
         }
 
-        if (payload.RequestedAmount > eligibility.MaxRequestAmount)
+        if (payload.DisbursementAmount > eligibility.MaxDisbursementAmount)
         {
-            return (false, "Requested amount exceeds outstanding amount.", new[] { "Requested amount is too high." }, null);
+            return (false, "Disbursement amount exceeds invoice amount.", new[] { "Disbursement amount is too high." }, null);
         }
+
+        var fee = decimal.Round(payload.DisbursementAmount * 0.02m, 2, MidpointRounding.AwayFromZero);
 
         var request = _earlyPaymentRequestRepository.Add(new EarlyPaymentRequest
         {
-            Id = Guid.NewGuid(),
+            RequestId = Guid.NewGuid().ToString("N"),
             InvoiceId = invoiceId,
-            RequestedAmount = payload.RequestedAmount,
-            RequestedAtUtc = DateTime.UtcNow,
+            RequestedDate = DateTime.UtcNow,
+            DisbursementAmount = payload.DisbursementAmount,
+            Fee = fee,
             Status = EarlyPaymentRequestStatus.Pending
         });
 
@@ -100,12 +101,13 @@ public class InvoiceService : IInvoiceService
     {
         return new InvoiceDto
         {
-            Id = invoice.Id,
+            InvoiceId = invoice.InvoiceId,
+            InvoiceNumber = invoice.InvoiceNumber,
+            SupplierName = invoice.SupplierName,
             SupplierId = invoice.SupplierId,
             Amount = invoice.Amount,
-            AmountPaid = invoice.AmountPaid,
-            AmountOutstanding = invoice.Amount - invoice.AmountPaid,
-            DueDateUtc = invoice.DueDateUtc,
+            SubmittedDate = invoice.SubmittedDate,
+            DueDate = invoice.DueDate,
             Status = invoice.Status.ToString()
         };
     }
@@ -114,10 +116,11 @@ public class InvoiceService : IInvoiceService
     {
         return new EarlyPaymentRequestDto
         {
-            Id = request.Id,
+            RequestId = request.RequestId,
             InvoiceId = request.InvoiceId,
-            RequestedAmount = request.RequestedAmount,
-            RequestedAtUtc = request.RequestedAtUtc,
+            RequestedDate = request.RequestedDate,
+            DisbursementAmount = request.DisbursementAmount,
+            Fee = request.Fee,
             Status = request.Status.ToString()
         };
     }

@@ -2,17 +2,20 @@ namespace QuickToCash.Api.Models;
 
 public class Invoice
 {
-    public Guid Id { get; set; }
+    public string InvoiceId { get; set; } = string.Empty;
+    public string InvoiceNumber { get; set; } = string.Empty;
+    public string SupplierName { get; set; } = string.Empty;
     public string SupplierId { get; set; } = string.Empty;
     public decimal Amount { get; set; }
-    public decimal AmountPaid { get; set; }
-    public DateTime DueDateUtc { get; set; }
-    public InvoiceStatus Status { get; set; } = InvoiceStatus.PendingApproval;
+    public DateTime SubmittedDate { get; set; }
+    public DateTime DueDate { get; set; }
+    public InvoiceStatus Status { get; set; } = InvoiceStatus.Pending;
 }
 
 public enum InvoiceStatus
 {
-    PendingApproval = 1,
+    Pending = 1,
     Approved = 2,
-    Paid = 3
+    Funded = 3,
+    Rejected = 4
 }

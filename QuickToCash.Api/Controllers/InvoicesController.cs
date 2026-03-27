@@ -30,8 +30,8 @@ public class InvoicesController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<InvoiceDto>>.Ok(invoices));
     }
 
-    [HttpGet("{id:guid}")]
-    public ActionResult<ApiResponse<InvoiceDto>> GetInvoiceById(Guid id)
+    [HttpGet("{id}")]
+    public ActionResult<ApiResponse<InvoiceDto>> GetInvoiceById(string id)
     {
         var invoice = _invoiceService.GetInvoiceById(id);
         if (invoice is null)
@@ -42,8 +42,8 @@ public class InvoicesController : ControllerBase
         return Ok(ApiResponse<InvoiceDto>.Ok(invoice));
     }
 
-    [HttpGet("{id:guid}/early-payment-eligibility")]
-    public ActionResult<ApiResponse<EarlyPaymentEligibilityDto>> GetEarlyPaymentEligibility(Guid id)
+    [HttpGet("{id}/early-payment-eligibility")]
+    public ActionResult<ApiResponse<EarlyPaymentEligibilityDto>> GetEarlyPaymentEligibility(string id)
     {
         var eligibility = _invoiceService.GetEarlyPaymentEligibility(id);
         if (eligibility is null)
@@ -56,9 +56,9 @@ public class InvoicesController : ControllerBase
         return Ok(ApiResponse<EarlyPaymentEligibilityDto>.Ok(eligibility));
     }
 
-    [HttpPost("{id:guid}/early-payment-request")]
+    [HttpPost("{id}/early-payment-request")]
     public ActionResult<ApiResponse<EarlyPaymentRequestDto>> CreateEarlyPaymentRequest(
-        Guid id,
+        string id,
         [FromBody] CreateEarlyPaymentRequestDto payload)
     {
         var result = _invoiceService.CreateEarlyPaymentRequest(id, payload);
