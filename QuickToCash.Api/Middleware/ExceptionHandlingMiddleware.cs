@@ -20,6 +20,11 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception)
         {
+            if (context.Response.HasStarted)
+            {
+                throw;
+            }
+
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/json";
 
