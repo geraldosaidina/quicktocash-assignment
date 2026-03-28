@@ -36,7 +36,7 @@ public class EarlyPaymentServiceTests
         Assert.Equal(3, result.EarlyByDays);
         Assert.Equal(0m, result.Fee);
         Assert.Equal(0m, result.DisbursementAmount);
-        Assert.Equal("Due date must be more than 5 days away.", result.Reason);
+        Assert.Equal("Due date is too close.", result.Reason);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class EarlyPaymentServiceTests
         var result = service.Evaluate(invoice);
 
         Assert.False(result.IsEligible);
-        Assert.Equal("Invoice must be Approved.", result.Reason);
+        Assert.Equal("Invoice is not yet approved.", result.Reason);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class EarlyPaymentServiceTests
         var result = service.Evaluate(invoice);
 
         Assert.False(result.IsEligible);
-        Assert.Equal("Invoice must be Approved.", result.Reason);
+        Assert.Equal("Invoice has been rejected.", result.Reason);
     }
 
     [Fact]

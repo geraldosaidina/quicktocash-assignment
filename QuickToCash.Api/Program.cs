@@ -52,6 +52,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors(LocalFrontendCorsPolicy);
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<AuthorizationMiddleware>();
 
 app.MapControllers();
 

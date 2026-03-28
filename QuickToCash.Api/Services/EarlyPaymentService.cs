@@ -21,14 +21,29 @@ public class EarlyPaymentService : IEarlyPaymentService
     {
         var earlyByDays = (invoice.DueDate.Date - _dateTimeProvider.UtcNow.Date).Days;
 
+        if (invoice.Status == InvoiceStatus.Pending)
+        {
+            return NotEligible(earlyByDays, "Invoice is not yet approved.");
+        }
+
+        if (invoice.Status == InvoiceStatus.Rejected)
+        {
+            return NotEligible(earlyByDays, "Invoice has been rejected.");
+        }
+
+        if (invoice.Status == InvoiceStatus.Funded)
+        {
+            return NotEligible(earlyByDays, "Invoice is already funded.");
+        }
+
         if (invoice.Status != InvoiceStatus.Approved)
         {
-            return NotEligible(earlyByDays, "Invoice must be Approved.");
+            return NotEligible(earlyByDays, "Invoice is not eligible.");
         }
 
         if (earlyByDays <= MinDaysBeforeDueDate)
         {
-            return NotEligible(earlyByDays, "Due date must be more than 5 days away.");
+            return NotEligible(earlyByDays, "Due date is too close.");
         }
 
         var fee = decimal.Round(
