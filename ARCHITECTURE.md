@@ -58,6 +58,10 @@ The solution uses a simple layered architecture:
    - Confirmation step before request submission.
    - Duplicate submission prevention at UI level after success.
 
+6. **Rule-protection unit test for disbursement consistency**
+   - Added a backend unit test that rejects create-request payloads when submitted disbursement does not match service-calculated disbursement.
+   - Reason: assignment rules define disbursement as a derived value (`Invoice Amount - Fee`), so the API must prevent client overrides that break financial consistency.
+
 ## Future Improvements
 
 - Add persistent database (e.g., PostgreSQL) and migrations

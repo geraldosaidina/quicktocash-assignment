@@ -1,7 +1,6 @@
 D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\appsettings.Development.json
 D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\appsettings.json
 D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\QuickToCash.Api.staticwebassets.endpoints.json
-D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\QuickToCash.Api.exe
 D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\QuickToCash.Api.deps.json
 D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\QuickToCash.Api.runtimeconfig.json
 D:\Work\quicktocash-assignment\QuickToCash.Api\bin\Debug\net10.0\QuickToCash.Api.dll

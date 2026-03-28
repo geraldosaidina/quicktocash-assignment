@@ -14,6 +14,7 @@ type InvoiceStatusFilter = 'All' | 'Pending' | 'Approved' | 'Funded' | 'Rejected
   styleUrl: './supplier-dashboard-page.component.scss'
 })
 export class SupplierDashboardPageComponent implements OnInit {
+  readonly currencyCode = 'MZN';
   readonly displayedColumns = [
     'invoiceNumber',
     'supplierName',
@@ -49,15 +50,15 @@ export class SupplierDashboardPageComponent implements OnInit {
 
   selectedInvoice: Invoice | null = null;
   eligibility: EarlyPaymentEligibility | null = null;
-  detailPanelOpen = false;
-  eligibilityLoading = false;
-  detailErrorMessage = '';
+  detailsOpen = false;
+  detailsLoading = false;
+  detailsErrorMessage = '';
   selectedInvoiceAlreadyRequested = false;
   confirmingRequest = false;
 
   private readonly requestedInvoiceIds = new Set<string>();
 
-  loading = false;
+  invoicesLoading = true;
   submitting = false;
   errorMessage = '';
 
@@ -76,8 +77,7 @@ export class SupplierDashboardPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Delay initial request to next macrotask to avoid first-pass hydration expression checks.
-    setTimeout(() => this.loadInvoices());
+    this.loadInvoices();
   }
 
   loadInvoices(): void {
@@ -91,23 +91,23 @@ export class SupplierDashboardPageComponent implements OnInit {
     }
 
     this.errorMessage = '';
-    this.loading = true;
+    this.invoicesLoading = true;
     this.invoiceService
       .getInvoicesBySupplier(supplierId)
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(finalize(() => (this.invoicesLoading = false)))
       .subscribe({
         next: (invoices) => {
           this.allInvoices = invoices;
           this.selectedStatus = 'All';
           this.searchTerm = '';
           this.recomputeDerivedState();
-          this.closeDetailPanel();
+          this.closeDetails();
         },
         error: (error) => {
           this.allInvoices = [];
           this.filteredInvoices = [];
           this.recomputeDerivedState();
-          this.closeDetailPanel();
+          this.closeDetails();
           this.showError(error);
         }
       });
@@ -125,38 +125,29 @@ export class SupplierDashboardPageComponent implements OnInit {
     this.recomputeDerivedState();
   }
 
-  openInvoiceDetails(invoiceId: string): void {
-    if (!invoiceId) {
+  openInvoiceDetails(invoice: Invoice): void {
+    if (!invoice?.invoiceId) {
       return;
     }
 
     this.errorMessage = '';
-    this.detailErrorMessage = '';
-    this.loading = true;
-    this.invoiceService
-      .getInvoiceById(invoiceId)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (invoice) => {
-          this.selectedInvoice = invoice;
-          this.detailPanelOpen = true;
-          this.selectedInvoiceAlreadyRequested = this.requestedInvoiceIds.has(invoice.invoiceId);
-          this.confirmingRequest = false;
-          this.fetchEligibility(invoice.invoiceId);
-        },
-        error: (error) => this.showError(error)
-      });
+    this.detailsErrorMessage = '';
+    this.selectedInvoice = invoice;
+    this.detailsOpen = true;
+    this.selectedInvoiceAlreadyRequested = this.requestedInvoiceIds.has(invoice.invoiceId);
+    this.confirmingRequest = false;
+    this.fetchEligibility(invoice.invoiceId);
   }
 
   fetchEligibility(invoiceId: string): void {
-    this.detailErrorMessage = '';
+    this.detailsErrorMessage = '';
     this.eligibility = null;
-    this.eligibilityLoading = true;
+    this.detailsLoading = true;
     this.confirmingRequest = false;
 
     this.invoiceService
       .getEarlyPaymentEligibility(invoiceId)
-      .pipe(finalize(() => (this.eligibilityLoading = false)))
+      .pipe(finalize(() => (this.detailsLoading = false)))
       .subscribe({
         next: (eligibility) => {
           this.eligibility = eligibility;
@@ -165,7 +156,7 @@ export class SupplierDashboardPageComponent implements OnInit {
           });
         },
         error: (error) => {
-          this.detailErrorMessage = this.getErrorMessage(error);
+          this.detailsErrorMessage = this.getErrorMessage(error);
           this.showError(error);
         }
       });
@@ -194,7 +185,7 @@ export class SupplierDashboardPageComponent implements OnInit {
     }
 
     this.errorMessage = '';
-    this.detailErrorMessage = '';
+    this.detailsErrorMessage = '';
     this.submitting = true;
     const invoiceId = this.selectedInvoice.invoiceId;
 
@@ -213,7 +204,7 @@ export class SupplierDashboardPageComponent implements OnInit {
         },
         error: (error) => {
           const message = this.getErrorMessage(error);
-          this.detailErrorMessage = message;
+          this.detailsErrorMessage = message;
 
           if (
             message.toLowerCase().includes('duplicate') ||
@@ -228,13 +219,14 @@ export class SupplierDashboardPageComponent implements OnInit {
       });
   }
 
-  closeDetailPanel(): void {
-    this.detailPanelOpen = false;
+  closeDetails(): void {
+    this.detailsOpen = false;
     this.selectedInvoice = null;
     this.eligibility = null;
-    this.detailErrorMessage = '';
+    this.detailsErrorMessage = '';
     this.selectedInvoiceAlreadyRequested = false;
     this.confirmingRequest = false;
+    this.detailsLoading = false;
   }
 
   private recomputeDerivedState(): void {

@@ -102,13 +102,16 @@ public class InvoiceService : IInvoiceService
             };
         }
 
-        if (payload.DisbursementAmount > calculation.DisbursementAmount)
+        if (payload.DisbursementAmount != calculation.DisbursementAmount)
         {
             return new CreateEarlyPaymentRequestResultDto
             {
                 Outcome = CreateEarlyPaymentRequestOutcome.NotEligible,
                 Message = "Invoice is not eligible for early payment.",
-                Errors = new[] { "Disbursement amount exceeds eligible amount." }
+                Errors = new[]
+                {
+                    $"Disbursement amount must equal the calculated value ({calculation.DisbursementAmount:0.00})."
+                }
             };
         }
 
@@ -117,7 +120,7 @@ public class InvoiceService : IInvoiceService
             RequestId = Guid.NewGuid().ToString("N"),
             InvoiceId = invoiceId,
             RequestedDate = _dateTimeProvider.UtcNow,
-            DisbursementAmount = payload.DisbursementAmount,
+            DisbursementAmount = calculation.DisbursementAmount,
             Fee = calculation.Fee,
             Status = EarlyPaymentRequestStatus.Pending
         });

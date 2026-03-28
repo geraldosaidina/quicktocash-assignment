@@ -8,10 +8,30 @@ html {
       density: 0
     )
   );
+  font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   margin: 0;
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background-color: #f6f7fb;
+  font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f7f9fc;
+  color: #0f172a;
+}
+
+/* Enforce sans-serif typography across app and Angular Material surfaces. */
+:root,
+body,
+.mat-typography,
+.mat-mdc-typography {
+  font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
 }
